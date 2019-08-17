@@ -161,11 +161,37 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
         will ask user to link the server.
         """
         self.device_config = import_config
-
-        # apptoken file does not exist, forward to linking step
-        config_file = self.hass.config.path(CONFIG_PATH.format(
-            host=self.device_config[CONF_HOST]))
-        if not os.path.exists(config_file):
+        # no apptoken in device config
+        if 'apptoken' not in self.device_config:
             return await self.async_step_link()
 
         return await self._create_entry()
+
+    async def async_step_link(self):
+        # try to get an app token from the server and register it
+        try:
+            client = DSClient(
+                host=HOST_FORMAT.format(
+                    host=self.device_config[CONF_HOST],
+                    port=self.device_config[CONF_PORT]),
+                username=self.device_config[CONF_USERNAME],
+                password=self.device_config[CONF_PASSWORD],
+                config_path=self.hass.config.path(
+                    CONFIG_PATH.format(host=user_input[CONF_HOST])),
+                apartment_name=self.device_config[CONF_ALIAS])
+            try:
+                apptoken = await client.get_application_token()
+            except DSException:
+                raise CannotConnect
+
+            # add apptoken to device config
+            self.device_config[CONF_ACCESS_TOKEN] = apptoken
+
+            return await self._create_entry()   
+        except AlreadyConfigured:
+            reason = 'already_configured'
+
+        except CannotConnect:
+            reason = 'communication_error'
+
+        return self.async_abort(reason=reason)
