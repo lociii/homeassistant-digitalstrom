@@ -112,7 +112,7 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
         """create entry for instance"""
 
         # add slug to device config
-        self.device_config[CONF_SLUG] = slugifySLUG_FORMAT.format(
+        self.device_config[CONF_SLUG] = slugify(SLUG_FORMAT.format(
             host=self.device_config[CONF_HOST],
             port=self.device_config[CONF_PORT]))
 
@@ -133,7 +133,7 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
             return self.async_abort(reason='not_digitalstrom_server')
 
         # device already known
-        slug = slugifySLUG_FORMAT.format(
+        slug = slugify(SLUG_FORMAT.format(
             host=discovery_info[ATTR_HOST], port=DEFAULT_PORT))
         if slug in initialized_devices(self.hass):
             return self.async_abort(reason='already_configured')
