@@ -10,6 +10,7 @@ from homeassistant.const import (
     CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD, CONF_ACCESS_TOKEN,
     CONF_ALIAS)
 from homeassistant.core import callback
+from homeassistant.util import slugify
 
 from .const import (
     DOMAIN, CONFIG_PATH, HOST_FORMAT, DIGITALSTROM_MANUFACTURERS, DEFAULT_HOST,
@@ -29,8 +30,8 @@ def configured_devices(hass):
 def initialized_devices(hass):
     """return a set of all initialized instances"""
     return {
-        SLUG_FORMAT.format(
-            host=device[CONF_HOST], port=device[CONF_PORT]): device for device
+        slugify(SLUG_FORMAT.format(
+            host=device[CONF_HOST], port=device[CONF_PORT])): device for device
         in hass.data.get(DOMAIN, {}).values()}
 
 
@@ -111,9 +112,9 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
         """create entry for instance"""
 
         # add slug to device config
-        self.device_config[CONF_SLUG] = SLUG_FORMAT.format(
+        self.device_config[CONF_SLUG] = slugifySLUG_FORMAT.format(
             host=self.device_config[CONF_HOST],
-            port=self.device_config[CONF_PORT])
+            port=self.device_config[CONF_PORT]))
 
         return self.async_create_entry(
             title=TITLE_FORMAT.format(host=self.device_config[CONF_HOST]),
@@ -132,8 +133,8 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
             return self.async_abort(reason='not_digitalstrom_server')
 
         # device already known
-        slug = SLUG_FORMAT.format(
-            host=discovery_info[ATTR_HOST], port=DEFAULT_PORT)
+        slug = slugifySLUG_FORMAT.format(
+            host=discovery_info[ATTR_HOST], port=DEFAULT_PORT))
         if slug in initialized_devices(self.hass):
             return self.async_abort(reason='already_configured')
 

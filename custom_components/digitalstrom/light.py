@@ -18,8 +18,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
     from .const import DOMAIN, DOMAIN_LISTENER
     from pydigitalstrom.devices.scene import DSColorScene
 
-    client = hass.data[DOMAIN][entry.data.slug]
-    listener = hass.data[DOMAIN][DOMAIN_LISTENER][entry.data.slug]
+    client = hass.data[DOMAIN][entry.data['slug']]
+    listener = hass.data[DOMAIN][DOMAIN_LISTENER][entry.data['slug']]
     devices = []
     scenes = client.get_scenes()
     for scene in scenes.values():
