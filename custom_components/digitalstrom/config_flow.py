@@ -168,6 +168,9 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
         return await self._create_entry()
 
     async def async_step_link(self):
+        from pydigitalstrom.client import DSClient
+        from pydigitalstrom.exceptions import DSException
+
         # try to get an app token from the server and register it
         try:
             client = DSClient(
