@@ -180,7 +180,8 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
                 username=self.device_config[CONF_USERNAME],
                 password=self.device_config[CONF_PASSWORD],
                 config_path=self.hass.config.path(
-                    CONFIG_PATH.format(host=user_input[CONF_HOST])),
+                    CONFIG_PATH.format(
+                        host=self.device_config[CONF_HOST])),
                 apartment_name=self.device_config[CONF_ALIAS])
             try:
                 apptoken = await client.get_application_token()
