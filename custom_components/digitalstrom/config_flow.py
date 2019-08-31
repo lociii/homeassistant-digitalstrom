@@ -46,7 +46,8 @@ def initialized_devices(hass):
     return initialized_devices
 
 
-class DigitalStromFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+@config_entries.HANDLERS.register(DOMAIN)
+class DigitalStromFlowHandler(config_entries.ConfigFlow):
     """handle a digitalSTROM config flow"""
 
     VERSION = 1
