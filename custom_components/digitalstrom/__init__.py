@@ -2,7 +2,6 @@
 import logging
 
 from homeassistant import config_entries
-from homeassistant.components.digitalstrom.util import slugify_entry
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_HOST,
@@ -19,6 +18,7 @@ from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.util import slugify
 
 from .const import DOMAIN, DOMAIN_LISTENER, CONFIG_PATH, HOST_FORMAT, SLUG_FORMAT
+from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
 

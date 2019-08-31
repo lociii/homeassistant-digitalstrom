@@ -2,8 +2,6 @@
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.components.digitalstrom.const import DEFAULT_ALIAS, DEFAULT_HOST
-from homeassistant.components.digitalstrom.util import slugify_entry
 from homeassistant.components.ssdp import ATTR_MANUFACTURER, ATTR_HOST, ATTR_NAME
 from homeassistant.const import (
     CONF_HOST,
@@ -19,10 +17,13 @@ from .const import (
     CONFIG_PATH,
     HOST_FORMAT,
     DIGITALSTROM_MANUFACTURERS,
+    DEFAULT_ALIAS,
+    DEFAULT_HOST,
     DEFAULT_PORT,
     DEFAULT_USERNAME,
     TITLE_FORMAT,
 )
+from .util import slugify_entry
 
 
 @callback

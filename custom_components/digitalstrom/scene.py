@@ -1,9 +1,10 @@
 # -*- coding: UTF-8 -*-
 import logging
 
-from homeassistant.components.digitalstrom.util import slugify_entry
 from homeassistant.components.scene import Scene
 from homeassistant.const import CONF_HOST, CONF_PORT
+
+from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
 

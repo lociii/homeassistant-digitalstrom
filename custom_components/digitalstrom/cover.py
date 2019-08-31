@@ -2,8 +2,9 @@
 import logging
 
 from homeassistant.components.cover import CoverDevice, SUPPORT_CLOSE, SUPPORT_OPEN
-from homeassistant.components.digitalstrom.util import slugify_entry
 from homeassistant.const import CONF_HOST, CONF_PORT
+
+from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
 

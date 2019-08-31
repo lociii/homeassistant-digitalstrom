@@ -1,10 +1,11 @@
 # -*- coding: UTF-8 -*-
 import logging
 
-from homeassistant.components.digitalstrom.util import slugify_entry
 from homeassistant.components.light import Light
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.const import STATE_ON, CONF_HOST, CONF_PORT
+
+from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
 
