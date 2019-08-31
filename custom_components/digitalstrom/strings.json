@@ -1,23 +1,25 @@
 {
-    "config": {
-      "title": "digitalSTROM",
-      "step": {
-        "user": {
-          "title": "Set up digitalSTROM component",
-          "data": {
-            "host": "Server (host and port)",
-            "username": "Username",
-            "password": "Password",
-            "apartment": "Apartment name"
-          }
+  "config": {
+    "title": "digitalSTROM",
+    "step": {
+      "user": {
+        "title": "Set up digitalSTROM component",
+        "data": {
+          "host": "Server",
+          "port": "Port",
+          "username": "Username",
+          "password": "Password",
+          "apartment": "Apartment name"
         }
-      },
-      "error": {
-        "already_configured": "This digitalSTROM server is already set up.",
-        "communication_error": "Unable to communicate with the server, please check host, username and password."
-      },
-      "abort": {
-        "not_digitalstrom_server": "Discovered device is not a digitalSTROM server"
       }
+    },
+    "error": {
+      "already_configured": "This digitalSTROM server is already set up.",
+      "already_discovered": "This digitalSTROM server was already discovered.",
+      "communication_error": "Unable to communicate with the server, please check host, username and password."
+    },
+    "abort": {
+      "not_digitalstrom_server": "Discovered device is not a digitalSTROM server"
     }
   }
+}

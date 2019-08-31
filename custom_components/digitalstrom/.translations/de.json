@@ -1,0 +1,25 @@
+{
+  "config": {
+    "title": "digitalSTROM",
+    "step": {
+      "user": {
+        "title": "digitalSTROM server einrichten",
+        "data": {
+          "host": "Server",
+          "port": "Port (i.d.R. 8080)",
+          "username": "Benutzername",
+          "password": "Passwort",
+          "apartment": "Name der Installation"
+        }
+      }
+    },
+    "error": {
+      "already_configured": "Dieser digitalSTROM-Server ist bereits eingerichtet.",
+      "already_discovered": "Dieser digitalSTROM-Server wurde bereits entdeckt.",
+      "communication_error": "Verbindung fehlgeschlagen, bitte Daten überprüfen."
+    },
+    "abort": {
+      "not_digitalstrom_server": "Das entdeckte Gerät ist kein digitalSTROM-Server"
+    }
+  }
+}

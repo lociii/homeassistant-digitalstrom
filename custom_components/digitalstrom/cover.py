@@ -1,14 +1,14 @@
 # -*- coding: UTF-8 -*-
 import logging
 
-from homeassistant.components.cover import (
-    CoverDevice, SUPPORT_CLOSE, SUPPORT_OPEN)
+from homeassistant.components.cover import CoverDevice, SUPPORT_CLOSE, SUPPORT_OPEN
+from homeassistant.components.digitalstrom.util import slugify_entry
+from homeassistant.const import CONF_HOST, CONF_PORT
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_platform(
-        hass, config, async_add_devices, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Platform uses config entry setup."""
     pass
 
@@ -17,8 +17,10 @@ async def async_setup_entry(hass, entry, async_add_entities):
     from .const import DOMAIN, DOMAIN_LISTENER
     from pydigitalstrom.devices.scene import DSColorScene
 
-    client = hass.data[DOMAIN][entry.data['slug']]
-    listener = hass.data[DOMAIN][DOMAIN_LISTENER][entry.data['slug']]
+    device_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
+
+    client = hass.data[DOMAIN][device_slug]
+    listener = hass.data[DOMAIN][DOMAIN_LISTENER][device_slug]
     devices = []
     scenes = client.get_scenes()
     for scene in scenes.values():
@@ -30,18 +32,24 @@ async def async_setup_entry(hass, entry, async_add_entities):
             continue
 
         # get turn on counterpart
-        scene_on = scenes.get('{zone_id}_{color}_{scene_id}'.format(
-            zone_id=scene.zone_id, color=scene.color,
-            scene_id=scene.scene_id + 5), None)
+        scene_on = scenes.get(
+            "{zone_id}_{color}_{scene_id}".format(
+                zone_id=scene.zone_id, color=scene.color, scene_id=scene.scene_id + 5
+            ),
+            None,
+        )
 
         # no turn on scene found, skip
         if not scene_on:
             continue
 
         # add cover
-        _LOGGER.info('adding cover {}: {}'.format(scene.scene_id, scene.name))
-        devices.append(DigitalstromCover(
-            hass=hass, scene_on=scene_on, scene_off=scene, listener=listener))
+        _LOGGER.info("adding cover {}: {}".format(scene.scene_id, scene.name))
+        devices.append(
+            DigitalstromCover(
+                hass=hass, scene_on=scene_on, scene_off=scene, listener=listener
+            )
+        )
 
     async_add_entities(device for device in devices)
 
@@ -66,7 +74,7 @@ class DigitalstromCover(CoverDevice):
 
     @property
     def unique_id(self):
-        return 'dscover_{id}'.format(id=self._scene_off.unique_id)
+        return "dscover_{id}".format(id=self._scene_off.unique_id)
 
     @property
     def available(self):
@@ -77,11 +85,11 @@ class DigitalstromCover(CoverDevice):
         return None
 
     async def async_open_cover(self, **kwargs):
-        _LOGGER.info('calling cover scene {}'.format(self._scene_on.scene_id))
+        _LOGGER.info("calling cover scene {}".format(self._scene_on.scene_id))
         await self._scene_on.turn_on()
 
     async def async_close_cover(self, **kwargs):
-        _LOGGER.info('calling cover scene {}'.format(self._scene_off.scene_id))
+        _LOGGER.info("calling cover scene {}".format(self._scene_off.scene_id))
         await self._scene_off.turn_on()
 
     def should_poll(self):

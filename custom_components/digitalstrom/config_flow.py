@@ -1,61 +1,71 @@
 """Config flow to configure the digitalSTROM component."""
-import os
-
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.components.ssdp import (
-    ATTR_MANUFACTURER, ATTR_HOST, ATTR_NAME)
+from homeassistant.components.digitalstrom.const import DEFAULT_ALIAS, DEFAULT_HOST
+from homeassistant.components.digitalstrom.util import slugify_entry
+from homeassistant.components.ssdp import ATTR_MANUFACTURER, ATTR_HOST, ATTR_NAME
 from homeassistant.const import (
-    CONF_HOST, CONF_PORT, CONF_USERNAME, CONF_PASSWORD, CONF_ACCESS_TOKEN,
-    CONF_ALIAS)
+    CONF_HOST,
+    CONF_PORT,
+    CONF_USERNAME,
+    CONF_PASSWORD,
+    CONF_ALIAS,
+)
 from homeassistant.core import callback
-from homeassistant.util import slugify
 
 from .const import (
-    DOMAIN, CONFIG_PATH, HOST_FORMAT, DIGITALSTROM_MANUFACTURERS, DEFAULT_HOST,
-    DEFAULT_PORT, DEFAULT_USERNAME, DEFAULT_ALIAS, CONF_SLUG, SLUG_FORMAT,
-    TITLE_FORMAT)
-from .errors import AlreadyConfigured, CannotConnect
+    DOMAIN,
+    CONFIG_PATH,
+    HOST_FORMAT,
+    DIGITALSTROM_MANUFACTURERS,
+    DEFAULT_PORT,
+    DEFAULT_USERNAME,
+    TITLE_FORMAT,
+)
 
 
 @callback
 def configured_devices(hass):
     """return a set of all configured instances"""
-    return {entry.data[CONF_SLUG]: entry for entry
-            in hass.config_entries.async_entries(DOMAIN)}
+    configuered_devices = list()
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        configuered_devices.append(
+            slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
+        )
+    return configuered_devices
 
 
 @callback
 def initialized_devices(hass):
     """return a set of all initialized instances"""
-    return {
-        slugify(SLUG_FORMAT.format(
-            host=device[CONF_HOST], port=device[CONF_PORT])): device for device
-        in hass.data.get(DOMAIN, {}).values()}
+    initialized_devices = list()
+    for slug in hass.data.get(DOMAIN, {}).keys():
+        initialized_devices.append(slug)
+    return initialized_devices
 
 
-@config_entries.HANDLERS.register(DOMAIN)
-class DigitalStromFlowHandler(config_entries.ConfigFlow):
+class DigitalStromFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """handle a digitalSTROM config flow"""
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
+    discovered_devices = []
 
     def __init__(self):
-        """Initialize the digitalSTROM config flow."""
-        self.device_config = {}
-        self.discovery_schema = {}
-        self.import_schema = {}
-
-    async def async_step_init(self, user_input=None):
-        """needed in order to not require re-translation of strings"""
-        return await self.async_step_user(user_input)
+        self.device_config = {
+            CONF_HOST: DEFAULT_HOST,
+            CONF_PORT: DEFAULT_PORT,
+            CONF_USERNAME: DEFAULT_USERNAME,
+            CONF_PASSWORD: "",
+            CONF_ALIAS: DEFAULT_ALIAS,
+        }
 
     async def async_step_user(self, user_input=None):
         """handle the start of the config flow"""
         errors = {}
 
+        # validate input
         if user_input is not None:
             from pydigitalstrom.client import DSClient
             from pydigitalstrom.exceptions import DSException
@@ -63,140 +73,92 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
             # build client config
             self.device_config = user_input.copy()
 
-            # server already known
-            if self.device_config[CONF_SLUG] in configured_devices(self.hass):
-                raise AlreadyConfigured
+            # get device identifier slug
+            device_slug = slugify_entry(
+                host=self.device_config[CONF_HOST], port=self.device_config[CONF_PORT]
+            )
 
-            # try to get an app token from the server and register it
-            try:
+            # check if server is already known
+            if device_slug in configured_devices(self.hass):
+                errors["base"] = "already_configured"
+            else:
+                # try to get an app token from the server and register it
                 client = DSClient(
                     host=HOST_FORMAT.format(
                         host=self.device_config[CONF_HOST],
-                        port=self.device_config[CONF_PORT]),
+                        port=self.device_config[CONF_PORT],
+                    ),
                     username=self.device_config[CONF_USERNAME],
                     password=self.device_config[CONF_PASSWORD],
                     config_path=self.hass.config.path(
-                        CONFIG_PATH.format(host=user_input[CONF_HOST])),
-                    apartment_name=self.device_config[CONF_ALIAS])
+                        CONFIG_PATH.format(host=user_input[CONF_HOST])
+                    ),
+                    apartment_name=self.device_config[CONF_ALIAS],
+                )
                 try:
-                    apptoken = await client.get_application_token()
+                    await client.get_application_token()
                 except DSException:
-                    raise CannotConnect
-
-                # add apptoken to device config
-                self.device_config[CONF_ACCESS_TOKEN] = apptoken
-
-                return await self._create_entry()   
-            except AlreadyConfigured:
-                errors['base'] = 'already_configured'
-
-            except CannotConnect:
-                errors['base'] = 'communication_error'
-
-        data = self.import_schema or self.discovery_schema or {
-            vol.Required(CONF_HOST, default=DEFAULT_HOST): str,
-            vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
-            vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
-            vol.Required(CONF_PASSWORD): str,
-            vol.Required(CONF_ALIAS, default=DEFAULT_ALIAS): str,
-        }
+                    errors["base"] = "communication_error"
+                else:
+                    return self.async_create_entry(
+                        title=TITLE_FORMAT.format(
+                            alias=self.device_config[CONF_ALIAS],
+                            host=self.device_config[CONF_HOST],
+                            port=self.device_config[CONF_PORT],
+                        ),
+                        data=self.device_config,
+                    )
 
         return self.async_show_form(
-            step_id='user',
-            description_placeholders=self.device_config,
-            data_schema=vol.Schema(data),
-            errors=errors
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST, default=self.device_config[CONF_HOST]): str,
+                    vol.Required(CONF_PORT, default=self.device_config[CONF_PORT]): int,
+                    vol.Required(
+                        CONF_USERNAME, default=self.device_config[CONF_USERNAME]
+                    ): str,
+                    vol.Required(
+                        CONF_PASSWORD, default=self.device_config[CONF_PASSWORD]
+                    ): str,
+                    vol.Required(
+                        CONF_ALIAS, default=self.device_config[CONF_ALIAS]
+                    ): str,
+                }
+            ),
+            errors=errors,
         )
 
-    async def _create_entry(self):
-        """create entry for instance"""
-
-        # add slug to device config
-        self.device_config[CONF_SLUG] = slugify(SLUG_FORMAT.format(
-            host=self.device_config[CONF_HOST],
-            port=self.device_config[CONF_PORT]))
-
-        return self.async_create_entry(
-            title=TITLE_FORMAT.format(host=self.device_config[CONF_HOST]),
-            data=self.device_config)
-
-    async def _update_entry(self, entry, host):
-        """update existing entry"""
-        entry.data[CONF_HOST] = host
-        self.hass.config_entries.async_update_entry(entry)
-
     async def async_step_ssdp(self, discovery_info):
-        """Handle a discovered digitalSTROM server."""
+        """
+        Handle a discovered digitalSTROM server.
+        
+        This will prefill the device data and redirect to the user form
+        to check and complete information.
+        """
 
         # something that is not a digitalSTROM server has been discovered
-        if discovery_info[ATTR_MANUFACTURER] not in DIGITALSTROM_MANUFACTURERS:
-            return self.async_abort(reason='not_digitalstrom_server')
+        if discovery_info.get(ATTR_MANUFACTURER) not in DIGITALSTROM_MANUFACTURERS:
+            return self.async_abort(reason="not_digitalstrom_server")
 
-        # device already known
-        slug = slugify(SLUG_FORMAT.format(
-            host=discovery_info[ATTR_HOST], port=DEFAULT_PORT))
-        if slug in initialized_devices(self.hass):
-            return self.async_abort(reason='already_configured')
+        # device already known, filter duplicates
+        device_slug = slugify_entry(
+            host=discovery_info.get(ATTR_HOST), port=DEFAULT_PORT
+        )
+        if device_slug in initialized_devices(self.hass):
+            return self.async_abort(reason="already_configured")
+
+        # add to discovered devices
+        if device_slug in self.discovered_devices:
+            return self.async_abort(reason="already_discovered")
+        self.discovered_devices.append(device_slug)
 
         # pre-fill schema and let the user complete it
-        self.discovery_schema = {
-            vol.Required(CONF_HOST, default=discovery_info[ATTR_HOST]): str,
-            vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
-            vol.Required(CONF_USERNAME, default=DEFAULT_USERNAME): str,
-            vol.Required(CONF_PASSWORD): str,
-            vol.Required(CONF_ALIAS, default=discovery_info[ATTR_NAME]): str,
+        self.device_config = {
+            CONF_HOST: discovery_info.get(ATTR_HOST),
+            CONF_PORT: DEFAULT_PORT,
+            CONF_USERNAME: DEFAULT_USERNAME,
+            CONF_PASSWORD: "",
+            CONF_ALIAS: discovery_info.get(ATTR_NAME),
         }
         return await self.async_step_user()
-
-    async def async_step_import(self, import_config):
-        """Import a digitalSTROM server as a config entry.
-
-        This flow is triggered by `async_setup` for configured servers.
-        This flow is also triggered by `async_step_discovery`.
-
-        This will execute for any server that does not have a
-        config entry yet (based on host).
-
-        If the apptoken file exists, we will create an entry.
-        Otherwise we will delegate to `link` step which
-        will ask user to link the server.
-        """
-        self.device_config = import_config
-        # no apptoken in device config
-        if 'apptoken' not in self.device_config:
-            return await self.async_step_link()
-
-        return await self._create_entry()
-
-    async def async_step_link(self):
-        from pydigitalstrom.client import DSClient
-        from pydigitalstrom.exceptions import DSException
-
-        # try to get an app token from the server and register it
-        try:
-            client = DSClient(
-                host=HOST_FORMAT.format(
-                    host=self.device_config[CONF_HOST],
-                    port=self.device_config[CONF_PORT]),
-                username=self.device_config[CONF_USERNAME],
-                password=self.device_config[CONF_PASSWORD],
-                config_path=self.hass.config.path(
-                    CONFIG_PATH.format(
-                        host=self.device_config[CONF_HOST])),
-                apartment_name=self.device_config[CONF_ALIAS])
-            try:
-                apptoken = await client.get_application_token()
-            except DSException:
-                raise CannotConnect
-
-            # add apptoken to device config
-            self.device_config[CONF_ACCESS_TOKEN] = apptoken
-
-            return await self._create_entry()   
-        except AlreadyConfigured:
-            reason = 'already_configured'
-
-        except CannotConnect:
-            reason = 'communication_error'
-
-        return self.async_abort(reason=reason)

@@ -1,13 +1,14 @@
 # -*- coding: UTF-8 -*-
 import logging
 
+from homeassistant.components.digitalstrom.util import slugify_entry
 from homeassistant.components.scene import Scene
+from homeassistant.const import CONF_HOST, CONF_PORT
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_platform(
-        hass, config, async_add_devices, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Platform uses config entry setup."""
     pass
 
@@ -16,7 +17,9 @@ async def async_setup_entry(hass, entry, async_add_entities):
     from .const import DOMAIN
     from pydigitalstrom.devices.scene import DSColorScene
 
-    client = hass.data[DOMAIN][entry.data['slug']]
+    device_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
+
+    client = hass.data[DOMAIN][device_slug]
     scenes = []
     for scene in client.get_scenes().values():
         # only color scenes have a special check
@@ -27,13 +30,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
             if scene.color in (1, 2) and scene.scene_id <= 9:
                 continue
 
-        _LOGGER.info('adding scene {}: {}'.format(scene.scene_id, scene.name))
+        _LOGGER.info("adding scene {}: {}".format(scene.scene_id, scene.name))
         scenes.append(DigitalstromScene(scene=scene))
     async_add_entities(scene for scene in scenes)
 
 
 class DigitalstromScene(Scene):
     """Representation of a digitalSTROM scene."""
+
     def __init__(self, scene, *args, **kwargs):
         self._scene = scene
         super().__init__(*args, **kwargs)
@@ -44,10 +48,10 @@ class DigitalstromScene(Scene):
 
     @property
     def unique_id(self):
-        return 'dsscene_{id}'.format(id=self._scene.unique_id)
+        return "dsscene_{id}".format(id=self._scene.unique_id)
 
     async def async_activate(self):
-        _LOGGER.info('calling scene {}'.format(self._scene.scene_id))
+        _LOGGER.info("calling scene {}".format(self._scene.scene_id))
         await self._scene.turn_on()
 
     def should_poll(self):

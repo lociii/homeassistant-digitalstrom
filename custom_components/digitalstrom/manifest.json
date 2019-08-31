@@ -2,15 +2,18 @@
   "domain": "digitalstrom",
   "name": "digitalSTROM",
   "documentation": "https://www.home-assistant.io/components/digitalstrom",
-  "requirements": ["pydigitalstrom==0.5.0"],
-  "codeowners": ["@lociii"],
+  "requirements": [
+    "pydigitalstrom==0.5.0"
+  ],
   "dependencies": [],
+  "codeowners": [
+    "@lociii"
+  ],
   "config_flow": true,
   "ssdp": {
     "manufacturer": [
       "digitalSTROM AG",
       "aizo ag"
     ]
-  },
-  "homeassistant": "0.95.0"
+  }
 }
