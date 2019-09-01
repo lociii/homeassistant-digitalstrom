@@ -10,6 +10,8 @@ However it does not support YAML config setup (anymore). The future is the front
 
 The digitalSTROM state machine works best when devices are not controlled directly. Therefore this integration works exclusively with the concept of digitalSTROM scenes. However to be more convenient, some scenes are combined to form meta devices.
 
+Only named scenes are supported - so make sure all scenes you would like to control have a name in digitalSTROM.
+
 ## Lights
 
 These are not real lights! e.g. no GE-KM200 or similar is exposed directly.
