@@ -9,6 +9,7 @@ from homeassistant.const import (
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_ALIAS,
+    CONF_TOKEN,
     EVENT_HOMEASSISTANT_START,
     EVENT_HOMEASSISTANT_STOP,
 )
@@ -17,7 +18,7 @@ from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.util import slugify
 
-from .const import DOMAIN, DOMAIN_LISTENER, CONFIG_PATH, HOST_FORMAT, SLUG_FORMAT
+from .const import DOMAIN, DOMAIN_LISTENER, HOST_FORMAT, SLUG_FORMAT
 from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,29 +58,28 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     # initialize component data
     hass.data.setdefault(DOMAIN, dict())
 
-    # get/validate apptoken
-    device_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
+    # old installations don't have an app token in their config entry
+    if not entry.data.get(CONF_TOKEN, None):
+        raise PlatformNotReady("No app token in config entry, please re-setup the integration")
+
+    # setup client
     client = DSClient(
         host=HOST_FORMAT.format(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT]),
-        username=entry.data[CONF_USERNAME],
-        password=entry.data[CONF_PASSWORD],
-        apartment_name=entry.data[CONF_ALIAS],
-        config_path=hass.config.path(CONFIG_PATH.format(host=entry.data[CONF_HOST])),
-    )
-    hass.data[DOMAIN][device_slug] = client
-    try:
-        await client.get_application_token()
-    except DSException:
-        raise PlatformNotReady(
-            "Failed to retrieve apptoken from digitalSTROM server at %s", client.host
-        )
-
-    _LOGGER.debug(
-        "Successfully retrieved apptoken from digitalSTROM server at %s", client.host
+        apptoken=entry.data[CONF_TOKEN], apartment_name=entry.data[CONF_ALIAS],
     )
 
     # load all scenes from digitalSTROM server
-    await client.initialize()
+    try:
+        await client.initialize()
+    except DSException:
+        raise PlatformNotReady("Failed to initialize digitalSTROM server at %s", client.host)
+    _LOGGER.debug(
+        "Successfully retrieved session token from digitalSTROM server at %s", client.host
+    )
+
+    # store client in hass data for future usage
+    device_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
+    hass.data[DOMAIN][device_slug] = client
 
     # register devices
     for component in COMPONENT_TYPES:

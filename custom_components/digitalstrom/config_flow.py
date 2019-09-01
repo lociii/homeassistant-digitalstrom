@@ -9,12 +9,12 @@ from homeassistant.const import (
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_ALIAS,
+    CONF_TOKEN,
 )
 from homeassistant.core import callback
 
 from .const import (
     DOMAIN,
-    CONFIG_PATH,
     HOST_FORMAT,
     DIGITALSTROM_MANUFACTURERS,
     DEFAULT_ALIAS,
@@ -69,7 +69,7 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
 
         # validate input
         if user_input is not None:
-            from pydigitalstrom.client import DSClient
+            from pydigitalstrom.apptokenhandler import DSAppTokenHandler
             from pydigitalstrom.exceptions import DSException
 
             # build client config
@@ -85,20 +85,16 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
                 errors["base"] = "already_configured"
             else:
                 # try to get an app token from the server and register it
-                client = DSClient(
+                handler = DSAppTokenHandler(
                     host=HOST_FORMAT.format(
                         host=self.device_config[CONF_HOST],
                         port=self.device_config[CONF_PORT],
                     ),
                     username=self.device_config[CONF_USERNAME],
                     password=self.device_config[CONF_PASSWORD],
-                    config_path=self.hass.config.path(
-                        CONFIG_PATH.format(host=user_input[CONF_HOST])
-                    ),
-                    apartment_name=self.device_config[CONF_ALIAS],
                 )
                 try:
-                    await client.get_application_token()
+                    token = await handler.request_apptoken()
                 except DSException:
                     errors["base"] = "communication_error"
                 else:
@@ -108,7 +104,12 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
                             host=self.device_config[CONF_HOST],
                             port=self.device_config[CONF_PORT],
                         ),
-                        data=self.device_config,
+                        data={
+                            CONF_TOKEN: token,
+                            CONF_HOST: self.device_config[CONF_HOST],
+                            CONF_PORT: self.device_config[CONF_PORT],
+                            CONF_ALIAS: self.device_config[CONF_ALIAS],
+                        }
                     )
 
         return self.async_show_form(

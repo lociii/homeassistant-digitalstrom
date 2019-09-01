@@ -3,7 +3,6 @@
 DOMAIN = "digitalstrom"
 DOMAIN_LISTENER = DOMAIN + "_listener"
 
-CONFIG_PATH = ".digitalstrom/auth_{host}.json"
 HOST_FORMAT = "https://{host}:{port}"
 SLUG_FORMAT = "{host}_{port}"
 TITLE_FORMAT = "{alias} ({host}:{port})"
