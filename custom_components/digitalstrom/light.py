@@ -22,7 +22,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
     device_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
 
     client = hass.data[DOMAIN][device_slug]
-    listener = hass.data[DOMAIN][DOMAIN_LISTENER][device_slug]
+    listener = hass.data[DOMAIN_LISTENER][device_slug]
     devices = []
     scenes = client.get_scenes()
     for scene in scenes.values():
