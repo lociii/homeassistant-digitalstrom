@@ -102,6 +102,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
             "event listener started for digitalSTROM server at {}".format(client.host)
         )
         hass.async_add_job(event_listener.start)
+        hass.async_add_job(client.stack.start)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, digitalstrom_start_listener)
 
@@ -111,6 +112,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
         _LOGGER.debug(
             "event listener stopped for digitalSTROM server at {}".format(client.host)
         )
+        hass.async_add_job(client.stack.stop)
         hass.async_add_job(event_listener.stop)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, digitalstrom_stop_listener)
