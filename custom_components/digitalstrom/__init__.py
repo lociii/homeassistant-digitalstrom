@@ -64,7 +64,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # setup client
     client = DSClient(
-        host=HOST_FORMAT.format(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT]),
+        host=entry.data[CONF_HOST], port=entry.data[CONF_PORT],
         apptoken=entry.data[CONF_TOKEN], apartment_name=entry.data[CONF_ALIAS],
     )
 
@@ -89,12 +89,10 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # set up the listener that polls changes every second
     _LOGGER.debug("preparing event listener for digitalSTROM server at %s", client.host)
-    from pydigitalstrom.listener import DSEventListener
+    from pydigitalstrom.websocket import DSWebsocketEventListener
 
     hass.data[DOMAIN].setdefault(DOMAIN_LISTENER, dict())
-    event_listener = DSEventListener(
-        client=client, event_id=1, event_name="callScene", timeout=1, loop=hass.loop
-    )
+    event_listener = DSWebsocketEventListener(client=client, event_name="callScene")
     hass.data[DOMAIN][DOMAIN_LISTENER][device_slug] = event_listener
 
     # start listener on home assistant startup

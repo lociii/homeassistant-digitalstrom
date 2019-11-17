@@ -86,10 +86,8 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
             else:
                 # try to get an app token from the server and register it
                 handler = DSAppTokenHandler(
-                    host=HOST_FORMAT.format(
-                        host=self.device_config[CONF_HOST],
-                        port=self.device_config[CONF_PORT],
-                    ),
+                    host=self.device_config[CONF_HOST],
+                    port=self.device_config[CONF_PORT],
                     username=self.device_config[CONF_USERNAME],
                     password=self.device_config[CONF_PASSWORD],
                 )
