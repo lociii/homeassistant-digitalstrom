@@ -9,7 +9,8 @@
           "port": "Port (i.d.R. 8080)",
           "username": "Benutzername",
           "password": "Passwort",
-          "apartment": "Name der Installation"
+          "apartment": "Name der Installation",
+          "delay": "Verzögerung zwischen einzelnen Aufrufen (in ms)"
         }
       }
     },

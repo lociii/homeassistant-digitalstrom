@@ -8,8 +8,10 @@ from homeassistant.const import (
     CONF_PORT,
     CONF_USERNAME,
     CONF_PASSWORD,
+    CONF_DELAY,
     CONF_ALIAS,
     CONF_TOKEN,
+    DEFAULT_DELAY,
     EVENT_HOMEASSISTANT_START,
     EVENT_HOMEASSISTANT_STOP,
 )
@@ -65,6 +67,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     client = DSClient(
         host=entry.data[CONF_HOST], port=entry.data[CONF_PORT],
         apptoken=entry.data[CONF_TOKEN], apartment_name=entry.data[CONF_ALIAS],
+        stack_delay=entry.data.get(CONF_DELAY, DEFAULT_DELAY)
     )
     listener = DSWebsocketEventListener(client=client, event_name="callScene")
 

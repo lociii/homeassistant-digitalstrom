@@ -9,7 +9,8 @@
           "port": "Port",
           "username": "Username",
           "password": "Password",
-          "apartment": "Apartment name"
+          "apartment": "Apartment name",
+          "delay": "Delay between single commands (in ms)"
         }
       }
     },

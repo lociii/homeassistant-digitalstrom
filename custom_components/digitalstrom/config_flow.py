@@ -17,9 +17,11 @@ from .const import (
     DOMAIN,
     HOST_FORMAT,
     DIGITALSTROM_MANUFACTURERS,
+    CONF_DELAY,
     DEFAULT_ALIAS,
     DEFAULT_HOST,
     DEFAULT_PORT,
+    DEFAULT_DELAY,
     DEFAULT_USERNAME,
     TITLE_FORMAT,
 )
@@ -61,6 +63,7 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
             CONF_USERNAME: DEFAULT_USERNAME,
             CONF_PASSWORD: "",
             CONF_ALIAS: DEFAULT_ALIAS,
+            CONF_DELAY: DEFAULT_DELAY,
         }
 
     async def async_step_user(self, user_input=None):
@@ -107,6 +110,7 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
                             CONF_HOST: self.device_config[CONF_HOST],
                             CONF_PORT: self.device_config[CONF_PORT],
                             CONF_ALIAS: self.device_config[CONF_ALIAS],
+                            CONF_DELAY: self.device_config[CONF_DELAY],
                         }
                     )
 
@@ -125,6 +129,7 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
                     vol.Required(
                         CONF_ALIAS, default=self.device_config[CONF_ALIAS]
                     ): str,
+                    vol.Required(CONF_DELAY, default=self.device_config[CONF_DELAY]): int,
                 }
             ),
             errors=errors,
@@ -161,5 +166,6 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
             CONF_USERNAME: DEFAULT_USERNAME,
             CONF_PASSWORD: "",
             CONF_ALIAS: discovery_info.get(ATTR_NAME),
+            CONF_DELAY: DEFAULT_DELAY,
         }
         return await self.async_step_user()
