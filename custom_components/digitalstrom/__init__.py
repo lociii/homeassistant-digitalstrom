@@ -10,7 +10,6 @@ from homeassistant.const import (
     CONF_PASSWORD,
     CONF_ALIAS,
     CONF_TOKEN,
-    DEFAULT_DELAY,
     EVENT_HOMEASSISTANT_START,
     EVENT_HOMEASSISTANT_STOP,
 )
@@ -19,7 +18,14 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.util import slugify
 
-from .const import DOMAIN, DOMAIN_LISTENER, HOST_FORMAT, SLUG_FORMAT, CONF_DELAY
+from .const import (
+    DOMAIN,
+    DOMAIN_LISTENER,
+    HOST_FORMAT,
+    SLUG_FORMAT,
+    CONF_DELAY,
+    DEFAULT_DELAY,
+)
 from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
