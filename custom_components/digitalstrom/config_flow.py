@@ -111,7 +111,7 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
                             CONF_PORT: self.device_config[CONF_PORT],
                             CONF_ALIAS: self.device_config[CONF_ALIAS],
                             CONF_DELAY: self.device_config[CONF_DELAY],
-                        }
+                        },
                     )
 
         return self.async_show_form(
@@ -129,7 +129,9 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
                     vol.Required(
                         CONF_ALIAS, default=self.device_config[CONF_ALIAS]
                     ): str,
-                    vol.Required(CONF_DELAY, default=self.device_config[CONF_DELAY]): int,
+                    vol.Required(
+                        CONF_DELAY, default=self.device_config[CONF_DELAY]
+                    ): int,
                 }
             ),
             errors=errors,

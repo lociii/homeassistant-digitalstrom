@@ -8,7 +8,6 @@ from homeassistant.const import (
     CONF_PORT,
     CONF_USERNAME,
     CONF_PASSWORD,
-    CONF_DELAY,
     CONF_ALIAS,
     CONF_TOKEN,
     DEFAULT_DELAY,
@@ -20,7 +19,7 @@ from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.util import slugify
 
-from .const import DOMAIN, DOMAIN_LISTENER, HOST_FORMAT, SLUG_FORMAT
+from .const import DOMAIN, DOMAIN_LISTENER, HOST_FORMAT, SLUG_FORMAT, CONF_DELAY
 from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,13 +60,17 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # old installations don't have an app token in their config entry
     if not entry.data.get(CONF_TOKEN, None):
-        raise ConfigEntryNotReady("No app token in config entry, please re-setup the integration")
+        raise ConfigEntryNotReady(
+            "No app token in config entry, please re-setup the integration"
+        )
 
     # setup client and listener
     client = DSClient(
-        host=entry.data[CONF_HOST], port=entry.data[CONF_PORT],
-        apptoken=entry.data[CONF_TOKEN], apartment_name=entry.data[CONF_ALIAS],
-        stack_delay=entry.data.get(CONF_DELAY, DEFAULT_DELAY)
+        host=entry.data[CONF_HOST],
+        port=entry.data[CONF_PORT],
+        apptoken=entry.data[CONF_TOKEN],
+        apartment_name=entry.data[CONF_ALIAS],
+        stack_delay=entry.data.get(CONF_DELAY, DEFAULT_DELAY),
     )
     listener = DSWebsocketEventListener(client=client, event_name="callScene")
 
@@ -81,9 +84,12 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
         try:
             await client.initialize()
         except DSException:
-            raise ConfigEntryNotReady("Failed to initialize digitalSTROM server at %s", client.host)
+            raise ConfigEntryNotReady(
+                "Failed to initialize digitalSTROM server at %s", client.host
+            )
         _LOGGER.debug(
-            "Successfully retrieved session token from digitalSTROM server at %s", client.host
+            "Successfully retrieved session token from digitalSTROM server at %s",
+            client.host,
         )
 
         # register devices
@@ -96,9 +102,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # start loops on home assistant startup
     async def digitalstrom_start_loops(event):
-        _LOGGER.debug(
-            "loops started for digitalSTROM server at {}".format(client.host)
-        )
+        _LOGGER.debug("loops started for digitalSTROM server at {}".format(client.host))
         hass.async_add_job(listener.start)
         hass.async_add_job(client.stack.start)
 
@@ -106,9 +110,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # stop loops on home assistant shutdown
     async def digitalstrom_stop_loops(event):
-        _LOGGER.debug(
-            "loops stopped for digitalSTROM server at {}".format(client.host)
-        )
+        _LOGGER.debug("loops stopped for digitalSTROM server at {}".format(client.host))
         hass.async_add_job(client.stack.stop)
         hass.async_add_job(listener.stop)
 

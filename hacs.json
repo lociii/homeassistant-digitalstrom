@@ -2,5 +2,5 @@
     "name": "digitalSTROM",
     "domains": ["cover", "light", "scene", "switch"],
     "homeassistant": "0.95.0",
-    "iot_class": "local_poll"
+    "iot_class": "local_poll",
 }
