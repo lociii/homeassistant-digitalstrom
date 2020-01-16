@@ -3,7 +3,7 @@
   "name": "digitalSTROM",
   "documentation": "https://www.home-assistant.io/components/digitalstrom",
   "requirements": [
-    "pydigitalstrom==1.1.0"
+    "pydigitalstrom==1.2.0"
   ],
   "dependencies": [],
   "codeowners": [
