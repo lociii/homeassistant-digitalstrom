@@ -1,5 +1,8 @@
 """The digitalSTROM integration."""
+import asyncio
 import logging
+import socket
+import urllib3
 
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
@@ -14,7 +17,7 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP,
 )
 from homeassistant.core import callback
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.util import slugify
 
@@ -55,7 +58,6 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     _LOGGER.debug("digitalstrom setup started")
 
     # import libraries
-    import urllib3
     from pydigitalstrom.client import DSClient
     from pydigitalstrom.exceptions import DSException
     from pydigitalstrom.websocket import DSWebsocketEventListener
@@ -66,7 +68,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # old installations don't have an app token in their config entry
     if not entry.data.get(CONF_TOKEN, None):
-        raise ConfigEntryNotReady(
+        raise PlatformNotReady(
             "No app token in config entry, please re-setup the integration"
         )
 
@@ -77,6 +79,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
         apptoken=entry.data[CONF_TOKEN],
         apartment_name=entry.data[CONF_ALIAS],
         stack_delay=entry.data.get(CONF_DELAY, DEFAULT_DELAY),
+        loop=hass.loop,
     )
     listener = DSWebsocketEventListener(client=client, event_name="callScene")
 
@@ -85,26 +88,35 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     hass.data[DOMAIN][entry_slug] = client
     hass.data[DOMAIN_LISTENER][entry_slug] = listener
 
-    async def digitalstrom_discover_devices(event):
-        # load all scenes from digitalSTROM server
-        try:
-            await client.initialize()
-        except DSException:
-            raise ConfigEntryNotReady(
-                "Failed to initialize digitalSTROM server at %s", client.host
-            )
+    # async def digitalstrom_discover_devices(event):
+    # load all scenes from digitalSTROM server
+    try:
+        await client.initialize()
+    except (DSException, RuntimeError):
         _LOGGER.debug(
-            "Successfully retrieved session token from digitalSTROM server at %s",
+            "First connection to digitalSTROM server at %s failed - let's retry once",
             client.host,
         )
 
-        # register devices
-        for component in COMPONENT_TYPES:
-            hass.async_create_task(
-                hass.config_entries.async_forward_entry_setup(entry, component)
+        # sleep for a second and retry - somehow these ds appliances
+        # like to fail our first request
+        await asyncio.sleep(1)
+        try:
+            await client.initialize()
+        except (DSException, RuntimeError):
+            raise PlatformNotReady(
+                "Failed to initialize digitalSTROM server at %s", client.host
             )
+    _LOGGER.debug(
+        "Successfully retrieved session token from digitalSTROM server at %s",
+        client.host,
+    )
 
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, digitalstrom_discover_devices)
+    # register devices
+    for component in COMPONENT_TYPES:
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(entry, component)
+        )
 
     # start loops on home assistant startup
     async def digitalstrom_start_loops(event):
