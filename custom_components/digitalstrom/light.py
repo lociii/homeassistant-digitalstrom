@@ -5,6 +5,7 @@ from homeassistant.components.light import Light
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.const import STATE_ON, CONF_HOST, CONF_PORT
 
+from .const import DOMAIN, DOMAIN_LISTENER
 from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
@@ -16,7 +17,6 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    from .const import DOMAIN, DOMAIN_LISTENER
     from pydigitalstrom.devices.scene import DSColorScene
 
     device_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
@@ -146,3 +146,13 @@ class DigitalstromLight(RestoreEntity, Light):
 
     def should_poll(self):
         return False
+
+    @property
+    def device_info(self):
+        """Return information about the device."""
+        return {
+            "identifiers": {(DOMAIN, self._scene_off.unique_id)},
+            "name": self._scene_off.name,
+            "model": "DSLight",
+            "manufacturer": "digitalSTROM AG",
+        }

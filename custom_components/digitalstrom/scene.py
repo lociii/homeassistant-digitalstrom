@@ -4,6 +4,7 @@ import logging
 from homeassistant.components.scene import Scene
 from homeassistant.const import CONF_HOST, CONF_PORT
 
+from .const import DOMAIN
 from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
@@ -15,7 +16,6 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
-    from .const import DOMAIN
     from pydigitalstrom.devices.scene import DSColorScene
 
     device_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
@@ -57,3 +57,13 @@ class DigitalstromScene(Scene):
 
     def should_poll(self):
         return False
+
+    @property
+    def device_info(self):
+        """Return information about the device."""
+        return {
+            "identifiers": {(DOMAIN, self._scene.unique_id)},
+            "name": self._scene.name,
+            "model": "DSScene",
+            "manufacturer": "digitalSTROM AG",
+        }
