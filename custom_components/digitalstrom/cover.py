@@ -34,10 +34,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
         # get turn on counterpart
         scene_on = scenes.get(
-            "{zone_id}_{color}_{scene_id}".format(
-                zone_id=scene.zone_id, color=scene.color, scene_id=scene.scene_id + 5
-            ),
-            None,
+            f"{scene.zone_id}_{scene.color}_{scene.scene_id + 5}", None
         )
 
         # no turn on scene found, skip
@@ -45,7 +42,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
             continue
 
         # add cover
-        _LOGGER.info("adding cover {}: {}".format(scene.scene_id, scene.name))
+        _LOGGER.info(f"adding cover {scene.scene_id}: {scene.name}")
         devices.append(
             DigitalstromCover(
                 hass=hass, scene_on=scene_on, scene_off=scene, listener=listener
@@ -75,7 +72,7 @@ class DigitalstromCover(CoverDevice):
 
     @property
     def unique_id(self):
-        return "dscover_{id}".format(id=self._scene_off.unique_id)
+        return f"dscover_{self._scene_off.unique_id}"
 
     @property
     def available(self):
@@ -86,11 +83,11 @@ class DigitalstromCover(CoverDevice):
         return None
 
     async def async_open_cover(self, **kwargs):
-        _LOGGER.info("calling cover scene {}".format(self._scene_on.scene_id))
+        _LOGGER.info(f"calling cover scene {self._scene_on.scene_id}")
         await self._scene_on.turn_on()
 
     async def async_close_cover(self, **kwargs):
-        _LOGGER.info("calling cover scene {}".format(self._scene_off.scene_id))
+        _LOGGER.info(f"calling cover scene {self._scene_off.scene_id}")
         await self._scene_off.turn_on()
 
     def should_poll(self):

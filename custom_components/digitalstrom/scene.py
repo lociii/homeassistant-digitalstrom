@@ -48,11 +48,11 @@ class DigitalstromScene(Scene):
         return self._scene.name
 
     @property
-    def unique_id(self):
-        return "dsscene_{id}".format(id=self._scene.unique_id)
+    def unique_id(self) -> str:
+        return f"dsscene_{self._scene.unique_id}"
 
     async def async_activate(self):
-        _LOGGER.info("calling scene {}".format(self._scene.scene_id))
+        _LOGGER.info(f"calling scene {self._scene.scene_id}")
         await self._scene.turn_on()
 
     def should_poll(self):

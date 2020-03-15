@@ -34,12 +34,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
             continue
 
         # get turn on counterpart
-        scene_off = scenes.get(
-            "{zone_id}_{scene_id}".format(
-                zone_id=scene.zone_id, scene_id=scene.scene_id + 1
-            ),
-            None,
-        )
+        scene_off = scenes.get(f"{scene.zone_id}_{scene.scene_id + 1}", None,)
 
         # no turn off scene found, skip
         if not scene_off:
@@ -114,7 +109,7 @@ class DigitalstromSwitch(RestoreEntity, SwitchDevice):
 
     @property
     def unique_id(self):
-        return "dsswitch_{id}".format(id=self._scene_on.unique_id)
+        return f"dsswitch_{self._scene_on.unique_id}"
 
     @property
     def available(self):
@@ -139,9 +134,7 @@ class DigitalstromSwitch(RestoreEntity, SwitchDevice):
             return
 
         _LOGGER.debug(
-            "trying to restore state of entity {} to {}".format(
-                self.entity_id, state.state
-            )
+            f"trying to restore state of entity {self.entity_id} to {state.state}"
         )
         self._state = state.state == STATE_ON
 

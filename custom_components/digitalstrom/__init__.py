@@ -120,7 +120,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # start loops on home assistant startup
     async def digitalstrom_start_loops(event):
-        _LOGGER.debug("loops started for digitalSTROM server at {}".format(client.host))
+        _LOGGER.debug(f"loops started for digitalSTROM server at {client.host}")
         hass.async_add_job(listener.start)
         hass.async_add_job(client.stack.start)
 
@@ -128,7 +128,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # stop loops on home assistant shutdown
     async def digitalstrom_stop_loops(event):
-        _LOGGER.debug("loops stopped for digitalSTROM server at {}".format(client.host))
+        _LOGGER.debug(f"loops stopped for digitalSTROM server at {client.host}")
         hass.async_add_job(client.stack.stop)
         hass.async_add_job(listener.stop)
 

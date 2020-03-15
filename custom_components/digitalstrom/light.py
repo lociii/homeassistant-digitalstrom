@@ -35,10 +35,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
 
         # get turn on counterpart
         scene_on = scenes.get(
-            "{zone_id}_{color}_{scene_id}".format(
-                zone_id=scene.zone_id, color=scene.color, scene_id=scene.scene_id + 5
-            ),
-            None,
+            f"{scene.zone_id}_{scene.color}_{scene.scene_id + 5}", None,
         )
 
         # no turn on scene found, skip
@@ -46,7 +43,7 @@ async def async_setup_entry(hass, entry, async_add_entities):
             continue
 
         # add light
-        _LOGGER.info("adding light {}: {}".format(scene.scene_id, scene.name))
+        _LOGGER.info(f"adding light {scene.scene_id}: {scene.name}")
         devices.append(
             DigitalstromLight(
                 hass=hass, scene_on=scene_on, scene_off=scene, listener=listener
@@ -113,7 +110,7 @@ class DigitalstromLight(RestoreEntity, Light):
 
     @property
     def unique_id(self):
-        return "dslight_{id}".format(id=self._scene_off.unique_id)
+        return f"dslight_{self._scene_off.unique_id}"
 
     @property
     def available(self):
@@ -138,9 +135,7 @@ class DigitalstromLight(RestoreEntity, Light):
             return
 
         _LOGGER.debug(
-            "trying to restore state of entity {} to {}".format(
-                self.entity_id, state.state
-            )
+            f"trying to restore state of entity {self.entity_id} to {state.state}"
         )
         self._state = state.state == STATE_ON
 
