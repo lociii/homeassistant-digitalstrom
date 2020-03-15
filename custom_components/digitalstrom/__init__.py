@@ -17,7 +17,7 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP,
 )
 from homeassistant.core import callback
-from homeassistant.exceptions import PlatformNotReady
+from homeassistant.exceptions import ConfigEntryNotReady, InvalidStateError
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.util import slugify
 
@@ -66,7 +66,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # old installations don't have an app token in their config entry
     if not entry.data.get(CONF_TOKEN, None):
-        raise PlatformNotReady(
+        raise InvalidStateError(
             "No app token in config entry, please re-setup the integration"
         )
 
@@ -91,21 +91,12 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     # load all scenes from digitalSTROM server
     try:
         await client.initialize()
-    except (DSException, RuntimeError):
-        _LOGGER.debug(
-            "First connection to digitalSTROM server at %s failed - let's retry once",
-            client.host,
+    except (DSException, RuntimeError, ConnectionResetError):
+        raise ConfigEntryNotReady(
+            "Failed to initialize digitalSTROM server at %s", client.host
         )
 
-        # sleep for a second and retry - somehow these ds appliances
-        # like to fail our first request
-        await asyncio.sleep(1)
-        try:
-            await client.initialize()
-        except (DSException, RuntimeError):
-            raise PlatformNotReady(
-                "Failed to initialize digitalSTROM server at %s", client.host
-            )
+    # we're connected
     _LOGGER.debug(
         "Successfully retrieved session token from digitalSTROM server at %s",
         client.host,
