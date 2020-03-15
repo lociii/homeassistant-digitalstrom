@@ -10,7 +10,7 @@ from pydigitalstrom import constants
 from pydigitalstrom.client import DSClient
 from pydigitalstrom.devices.scene import DSScene, DSColorScene
 
-from .const import DOMAIN
+from .const import DOMAIN, OPTION_GENERIC_SCENES, OPTION_GENERIC_SCENES_DEFAULT
 from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
@@ -91,3 +91,35 @@ class DigitalstromScene(Scene):
             "model": "DSScene",
             "manufacturer": "digitalSTROM AG",
         }
+
+    @property
+    def hidden(self) -> bool:
+        # only check known generic scenes
+        if self._scene.scene_id in constants.SCENE_NAMES.keys():
+
+            # get integration options or default
+            default: list = OPTION_GENERIC_SCENES_DEFAULT
+            if (
+                self._config_entry.options
+                and OPTION_GENERIC_SCENES in self._config_entry.options
+            ):
+                default = self._config_entry.options[OPTION_GENERIC_SCENES]
+
+            # build list of visible generic scenes
+            visible_scenes: list = []
+            option: str
+            for option in default:
+                visible_scenes.append(
+                    list(constants.SCENE_NAMES.keys())[
+                        list(constants.SCENE_NAMES.values()).index(option)
+                    ]
+                )
+
+            # scenes is set to be shown in options
+            if self._scene.scene_id in visible_scenes:
+                return False
+
+            return True
+
+        # default to visible
+        return False

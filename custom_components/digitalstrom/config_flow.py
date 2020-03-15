@@ -17,6 +17,7 @@ from homeassistant.const import (
     CONF_TOKEN,
 )
 from homeassistant.core import callback
+from homeassistant.helpers import config_validation
 
 from .const import (
     DOMAIN,
@@ -29,6 +30,8 @@ from .const import (
     DEFAULT_DELAY,
     DEFAULT_USERNAME,
     TITLE_FORMAT,
+    OPTION_GENERIC_SCENES,
+    OPTION_GENERIC_SCENES_DEFAULT,
 )
 from .util import slugify_entry
 
@@ -70,6 +73,11 @@ class DigitalStromConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_DELAY: DEFAULT_DELAY,
         }
         super().__init__(*args, **kwargs)
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return DigitalStromOptionsFlow(config_entry=config_entry)
 
     async def async_step_user(self, user_input=None):
         """handle the start of the config flow"""
@@ -181,3 +189,36 @@ class DigitalStromConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_DELAY: DEFAULT_DELAY,
         }
         return await self.async_step_user()
+
+
+class DigitalStromOptionsFlow(config_entries.OptionsFlow):
+    """Handle a option flow for DigitalStrom."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry):
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Handle options flow."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        from pydigitalstrom import constants
+
+        # build scene list for mutli select
+        scenes = {}
+        for scene_id, scene_name in constants.SCENE_NAMES.items():
+            scenes[scene_name] = scene_name
+        scenes = sorted(scenes)
+
+        # build options based on multi select
+        options = {
+            vol.Optional(
+                OPTION_GENERIC_SCENES,
+                default=self.config_entry.options.get(
+                    OPTION_GENERIC_SCENES, OPTION_GENERIC_SCENES_DEFAULT
+                ),
+            ): config_validation.multi_select(scenes),
+        }
+
+        return self.async_show_form(step_id="init", data_schema=vol.Schema(options))

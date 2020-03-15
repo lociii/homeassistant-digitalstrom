@@ -22,5 +22,15 @@
     "abort": {
       "not_digitalstrom_server": "Discovered device is not a digitalSTROM server"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Options for the digitalSTROM component. Which generic scenes should be added?",
+        "data": {
+          "generic_scenes": "Visible generic scenes"
+        }
+      }
+    }
   }
 }
