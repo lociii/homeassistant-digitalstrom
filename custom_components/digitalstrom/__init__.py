@@ -23,7 +23,6 @@ from homeassistant.util import slugify
 
 from .const import (
     DOMAIN,
-    DOMAIN_LISTENER,
     HOST_FORMAT,
     SLUG_FORMAT,
     CONF_DELAY,
@@ -64,7 +63,6 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # initialize component data
     hass.data.setdefault(DOMAIN, dict())
-    hass.data.setdefault(DOMAIN_LISTENER, dict())
 
     # old installations don't have an app token in their config entry
     if not entry.data.get(CONF_TOKEN, None):
@@ -85,8 +83,9 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     # store client in hass data for future usage
     entry_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
-    hass.data[DOMAIN][entry_slug] = client
-    hass.data[DOMAIN_LISTENER][entry_slug] = listener
+    hass.data[DOMAIN].setdefault(entry_slug, dict())
+    hass.data[DOMAIN][entry_slug]["client"] = client
+    hass.data[DOMAIN][entry_slug]["listener"] = listener
 
     # async def digitalstrom_discover_devices(event):
     # load all scenes from digitalSTROM server
@@ -118,7 +117,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
             hass.config_entries.async_forward_entry_setup(entry, component)
         )
 
-    # start loops on home assistant startup
+    # start websocket listener and action delayer loops on hass startup
     async def digitalstrom_start_loops(event):
         _LOGGER.debug(f"loops started for digitalSTROM server at {client.host}")
         hass.async_add_job(listener.start)
@@ -126,7 +125,7 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, digitalstrom_start_loops)
 
-    # stop loops on home assistant shutdown
+    # start websocket listener and action delayer loops on hass shutdown
     async def digitalstrom_stop_loops(event):
         _LOGGER.debug(f"loops stopped for digitalSTROM server at {client.host}")
         hass.async_add_job(client.stack.stop)

@@ -1,17 +1,19 @@
 """Define constants for the digitalSTROM component."""
+from typing import List
 
-DOMAIN = "digitalstrom"
-DOMAIN_LISTENER = DOMAIN + "_listener"
+from pydigitalstrom import constants as dsconst
 
-HOST_FORMAT = "https://{host}:{port}"
-SLUG_FORMAT = "{host}_{port}"
-TITLE_FORMAT = "{alias} ({host}:{port})"
+DOMAIN: str = "digitalstrom"
 
-CONF_DELAY = "delay"
+HOST_FORMAT: str = "https://{host}:{port}"
+SLUG_FORMAT: str = "{host}_{port}"
+TITLE_FORMAT: str = "{alias} ({host}:{port})"
 
-DIGITALSTROM_MANUFACTURERS = ["digitalSTROM AG", "aizo ag"]
-DEFAULT_HOST = "dss.local"
-DEFAULT_PORT = 8080
-DEFAULT_DELAY = 500
-DEFAULT_USERNAME = "dssadmin"
-DEFAULT_ALIAS = "Apartment"
+CONF_DELAY: str = "delay"
+
+DIGITALSTROM_MANUFACTURERS: List[str] = ["digitalSTROM AG", "aizo ag"]
+DEFAULT_HOST: str = "dss.local"
+DEFAULT_PORT: int = 8080
+DEFAULT_DELAY: int = 500
+DEFAULT_USERNAME: str = "dssadmin"
+DEFAULT_ALIAS: str = "Apartment"

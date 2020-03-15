@@ -53,15 +53,14 @@ def initialized_devices(hass):
     return initialized_devices
 
 
-@config_entries.HANDLERS.register(DOMAIN)
-class DigitalStromFlowHandler(config_entries.ConfigFlow):
+class DigitalStromConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """handle a digitalSTROM config flow"""
 
     VERSION = 1
-    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
+    CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_PUSH
     discovered_devices = []
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.device_config = {
             CONF_HOST: DEFAULT_HOST,
             CONF_PORT: DEFAULT_PORT,
@@ -70,6 +69,7 @@ class DigitalStromFlowHandler(config_entries.ConfigFlow):
             CONF_ALIAS: DEFAULT_ALIAS,
             CONF_DELAY: DEFAULT_DELAY,
         }
+        super().__init__(*args, **kwargs)
 
     async def async_step_user(self, user_input=None):
         """handle the start of the config flow"""
