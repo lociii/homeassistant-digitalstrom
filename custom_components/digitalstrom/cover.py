@@ -3,7 +3,9 @@ import logging
 from typing import Callable, Union
 
 from homeassistant.components.cover import CoverDevice, SUPPORT_CLOSE, SUPPORT_OPEN
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
+from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from pydigitalstrom.client import DSClient
 from pydigitalstrom.devices.scene import DSScene, DSColorScene
 from pydigitalstrom.websocket import DSWebsocketEventListener
