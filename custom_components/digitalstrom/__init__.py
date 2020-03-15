@@ -21,6 +21,10 @@ from homeassistant.exceptions import ConfigEntryNotReady, InvalidStateError
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.util import slugify
 
+from pydigitalstrom.client import DSClient
+from pydigitalstrom.exceptions import DSException
+from pydigitalstrom.websocket import DSWebsocketEventListener
+
 from .const import (
     DOMAIN,
     HOST_FORMAT,
@@ -56,11 +60,6 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     """
     _LOGGER.debug("digitalstrom setup started")
 
-    # import libraries
-    from pydigitalstrom.client import DSClient
-    from pydigitalstrom.exceptions import DSException
-    from pydigitalstrom.websocket import DSWebsocketEventListener
-
     # initialize component data
     hass.data.setdefault(DOMAIN, dict())
 
@@ -87,20 +86,18 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     hass.data[DOMAIN][entry_slug]["client"] = client
     hass.data[DOMAIN][entry_slug]["listener"] = listener
 
-    # async def digitalstrom_discover_devices(event):
     # load all scenes from digitalSTROM server
+    # this fails often on the first connection, but works on the second
     try:
         await client.initialize()
     except (DSException, RuntimeError, ConnectionResetError):
-        raise ConfigEntryNotReady(
-            "Failed to initialize digitalSTROM server at %s", client.host
-        )
+        try:
+            await client.initialize()
+        except (DSException, RuntimeError, ConnectionResetError):
+            raise ConfigEntryNotReady(f"Failed to initialize digitalSTROM server at {client.host}")
 
     # we're connected
-    _LOGGER.debug(
-        "Successfully retrieved session token from digitalSTROM server at %s",
-        client.host,
-    )
+    _LOGGER.debug(f"Successfully retrieved session token from digitalSTROM server at {client.host}")
 
     # register devices
     for component in COMPONENT_TYPES:
