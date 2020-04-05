@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 import logging
-from typing import Callable, Dict, Union
+from typing import Callable, Union
 
 from homeassistant.components.light import Light
 from homeassistant.config_entries import ConfigEntry
