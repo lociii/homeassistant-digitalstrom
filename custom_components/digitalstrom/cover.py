@@ -2,7 +2,7 @@
 import logging
 from typing import Callable, Union
 
-from homeassistant.components.cover import CoverDevice, SUPPORT_CLOSE, SUPPORT_OPEN
+from homeassistant.components.cover import CoverEntity, SUPPORT_CLOSE, SUPPORT_OPEN
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
@@ -66,7 +66,7 @@ async def async_setup_entry(
     async_add_entities(device for device in devices)
 
 
-class DigitalstromCover(CoverDevice):
+class DigitalstromCover(CoverEntity):
     def __init__(
         self,
         hass: HomeAssistantType,

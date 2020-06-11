@@ -2,7 +2,7 @@
 import logging
 from typing import Callable, Union
 
-from homeassistant.components.light import Light
+from homeassistant.components.light import LightEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_ON, CONF_HOST, CONF_PORT
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -69,7 +69,7 @@ async def async_setup_entry(
     async_add_entities(device for device in devices)
 
 
-class DigitalstromLight(RestoreEntity, Light):
+class DigitalstromLight(RestoreEntity, LightEntity):
     def __init__(
         self,
         hass: HomeAssistantType,

@@ -2,7 +2,7 @@
 import logging
 from typing import Callable, Union
 
-from homeassistant.components.switch import SwitchDevice
+from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_ON, CONF_HOST, CONF_PORT
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -68,7 +68,7 @@ async def async_setup_entry(
     async_add_entities(device for device in devices)
 
 
-class DigitalstromSwitch(RestoreEntity, SwitchDevice):
+class DigitalstromSwitch(RestoreEntity, SwitchEntity):
     def __init__(
         self,
         hass: HomeAssistantType,
