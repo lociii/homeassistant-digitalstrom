@@ -1,30 +1,45 @@
 # -*- coding: UTF-8 -*-
 import logging
+from typing import Callable, Union
 
 from homeassistant.components.switch import SwitchDevice
-from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_ON, CONF_HOST, CONF_PORT
+from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.helpers.typing import ConfigType, HomeAssistantType
+from pydigitalstrom.client import DSClient
+from pydigitalstrom.devices.scene import DSScene, DSColorScene
+from pydigitalstrom.websocket import DSWebsocketEventListener
 
+from .const import DOMAIN
 from .util import slugify_entry
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
+async def async_setup_platform(
+    hass: HomeAssistantType,
+    config: ConfigType,
+    async_add_devices: Callable,
+    discovery_info: dict = None,
+):
     """Platform uses config entry setup."""
     pass
 
 
-async def async_setup_entry(hass, entry, async_add_entities):
-    from .const import DOMAIN, DOMAIN_LISTENER
-    from pydigitalstrom.devices.scene import DSScene
+async def async_setup_entry(
+    hass: HomeAssistantType, entry: ConfigEntry, async_add_entities: Callable
+) -> None:
+    entry_slug: str = slugify_entry(
+        host=entry.data[CONF_HOST], port=entry.data[CONF_PORT]
+    )
 
-    device_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
+    client: DSClient = hass.data[DOMAIN][entry_slug]["client"]
+    listener: DSWebsocketEventListener = hass.data[DOMAIN][entry_slug]["listener"]
+    devices: list = []
+    scenes: dict = client.get_scenes()
 
-    client = hass.data[DOMAIN][device_slug]
-    listener = hass.data[DOMAIN_LISTENER][device_slug]
-    devices = []
-    scenes = client.get_scenes()
+    scene: Union[DSScene, DSColorScene]
     for scene in scenes.values():
         # only handle scenes
         if not isinstance(scene, DSScene):
@@ -34,11 +49,8 @@ async def async_setup_entry(hass, entry, async_add_entities):
             continue
 
         # get turn on counterpart
-        scene_off = scenes.get(
-            "{zone_id}_{scene_id}".format(
-                zone_id=scene.zone_id, scene_id=scene.scene_id + 1
-            ),
-            None,
+        scene_off: DSScene = scenes.get(
+            f"{scene.zone_id}_{scene.scene_id + 1}", None,
         )
 
         # no turn off scene found, skip
@@ -52,16 +64,25 @@ async def async_setup_entry(hass, entry, async_add_entities):
             )
         )
 
+    device: DigitalstromSwitch
     async_add_entities(device for device in devices)
 
 
 class DigitalstromSwitch(RestoreEntity, SwitchDevice):
-    def __init__(self, hass, scene_on, scene_off, listener, *args, **kwargs):
-        self._hass = hass
-        self._scene_on = scene_on
-        self._scene_off = scene_off
-        self._listener = listener
-        self._state = None
+    def __init__(
+        self,
+        hass: HomeAssistantType,
+        scene_on: DSScene,
+        scene_off: DSScene,
+        listener: DSWebsocketEventListener,
+        *args,
+        **kwargs,
+    ):
+        self._hass: HomeAssistantType = hass
+        self._scene_on: DSScene = scene_on
+        self._scene_off: DSScene = scene_off
+        self._listener: DSWebsocketEventListener = listener
+        self._state: bool = None
 
         # sleeping default is false
         if self._scene_on.scene_id == 69:
@@ -73,8 +94,8 @@ class DigitalstromSwitch(RestoreEntity, SwitchDevice):
 
         self.register_callback()
 
-    def register_callback(self):
-        async def event_callback(event):
+    def register_callback(self) -> None:
+        async def event_callback(event: dict):
             # sanity checks
             if "name" not in event:
                 return
@@ -88,8 +109,8 @@ class DigitalstromSwitch(RestoreEntity, SwitchDevice):
                 return
 
             # cast event data
-            zone_id = int(event["properties"]["zoneID"])
-            scene_id = int(event["properties"]["sceneID"])
+            zone_id: int = int(event["properties"]["zoneID"])
+            scene_id: int = int(event["properties"]["sceneID"])
 
             # turn on scene called
             if (
@@ -109,41 +130,49 @@ class DigitalstromSwitch(RestoreEntity, SwitchDevice):
         self._listener.register(callback=event_callback)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._scene_on.name
 
     @property
-    def unique_id(self):
-        return "dsswitch_{id}".format(id=self._scene_on.unique_id)
+    def unique_id(self) -> str:
+        return f"dsswitch_{self._scene_on.unique_id}"
 
     @property
-    def available(self):
+    def available(self) -> bool:
         return True
 
     @property
-    def is_on(self):
+    def is_on(self) -> bool:
         return self._state
 
-    async def async_turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs) -> None:
         await self._scene_on.turn_on()
         self._state = True
 
-    async def async_turn_off(self, **kwargs):
+    async def async_turn_off(self, **kwargs) -> None:
         await self._scene_off.turn_on()
         self._state = False
 
-    async def async_added_to_hass(self):
+    async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        state = await self.async_get_last_state()
+        state: bool = await self.async_get_last_state()
         if not state:
             return
 
         _LOGGER.debug(
-            "trying to restore state of entity {} to {}".format(
-                self.entity_id, state.state
-            )
+            f"trying to restore state of entity {self.entity_id} to {state.state}"
         )
         self._state = state.state == STATE_ON
 
-    def should_poll(self):
+    def should_poll(self) -> bool:
         return False
+
+    @property
+    def device_info(self) -> dict:
+        """Return information about the device."""
+        return {
+            "identifiers": {(DOMAIN, self._scene_off.unique_id)},
+            "name": self._scene_off.name,
+            "model": "DSSwitch",
+            "manufacturer": "digitalSTROM AG",
+        }

@@ -1,5 +1,8 @@
 """The digitalSTROM integration."""
+import asyncio
 import logging
+import socket
+import urllib3
 
 from homeassistant import config_entries
 from homeassistant.config_entries import ConfigEntry
@@ -14,13 +17,16 @@ from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP,
 )
 from homeassistant.core import callback
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryNotReady, InvalidStateError
 from homeassistant.helpers.typing import ConfigType, HomeAssistantType
 from homeassistant.util import slugify
 
+from pydigitalstrom.client import DSClient
+from pydigitalstrom.exceptions import DSException
+from pydigitalstrom.websocket import DSWebsocketEventListener
+
 from .const import (
     DOMAIN,
-    DOMAIN_LISTENER,
     HOST_FORMAT,
     SLUG_FORMAT,
     CONF_DELAY,
@@ -54,19 +60,12 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     """
     _LOGGER.debug("digitalstrom setup started")
 
-    # import libraries
-    import urllib3
-    from pydigitalstrom.client import DSClient
-    from pydigitalstrom.exceptions import DSException
-    from pydigitalstrom.websocket import DSWebsocketEventListener
-
     # initialize component data
     hass.data.setdefault(DOMAIN, dict())
-    hass.data.setdefault(DOMAIN_LISTENER, dict())
 
     # old installations don't have an app token in their config entry
     if not entry.data.get(CONF_TOKEN, None):
-        raise ConfigEntryNotReady(
+        raise InvalidStateError(
             "No app token in config entry, please re-setup the integration"
         )
 
@@ -77,46 +76,46 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
         apptoken=entry.data[CONF_TOKEN],
         apartment_name=entry.data[CONF_ALIAS],
         stack_delay=entry.data.get(CONF_DELAY, DEFAULT_DELAY),
+        loop=hass.loop,
     )
     listener = DSWebsocketEventListener(client=client, event_name="callScene")
 
     # store client in hass data for future usage
     entry_slug = slugify_entry(host=entry.data[CONF_HOST], port=entry.data[CONF_PORT])
-    hass.data[DOMAIN][entry_slug] = client
-    hass.data[DOMAIN_LISTENER][entry_slug] = listener
+    hass.data[DOMAIN].setdefault(entry_slug, dict())
+    hass.data[DOMAIN][entry_slug]["client"] = client
+    hass.data[DOMAIN][entry_slug]["listener"] = listener
 
-    async def digitalstrom_discover_devices(event):
-        # load all scenes from digitalSTROM server
+    # load all scenes from digitalSTROM server
+    # this fails often on the first connection, but works on the second
+    try:
+        await client.initialize()
+    except (DSException, RuntimeError, ConnectionResetError):
         try:
             await client.initialize()
-        except DSException:
-            raise ConfigEntryNotReady(
-                "Failed to initialize digitalSTROM server at %s", client.host
-            )
-        _LOGGER.debug(
-            "Successfully retrieved session token from digitalSTROM server at %s",
-            client.host,
+        except (DSException, RuntimeError, ConnectionResetError):
+            raise ConfigEntryNotReady(f"Failed to initialize digitalSTROM server at {client.host}")
+
+    # we're connected
+    _LOGGER.debug(f"Successfully retrieved session token from digitalSTROM server at {client.host}")
+
+    # register devices
+    for component in COMPONENT_TYPES:
+        hass.async_create_task(
+            hass.config_entries.async_forward_entry_setup(entry, component)
         )
 
-        # register devices
-        for component in COMPONENT_TYPES:
-            hass.async_create_task(
-                hass.config_entries.async_forward_entry_setup(entry, component)
-            )
-
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, digitalstrom_discover_devices)
-
-    # start loops on home assistant startup
+    # start websocket listener and action delayer loops on hass startup
     async def digitalstrom_start_loops(event):
-        _LOGGER.debug("loops started for digitalSTROM server at {}".format(client.host))
+        _LOGGER.debug(f"loops started for digitalSTROM server at {client.host}")
         hass.async_add_job(listener.start)
         hass.async_add_job(client.stack.start)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, digitalstrom_start_loops)
 
-    # stop loops on home assistant shutdown
+    # start websocket listener and action delayer loops on hass shutdown
     async def digitalstrom_stop_loops(event):
-        _LOGGER.debug("loops stopped for digitalSTROM server at {}".format(client.host))
+        _LOGGER.debug(f"loops stopped for digitalSTROM server at {client.host}")
         hass.async_add_job(client.stack.stop)
         hass.async_add_job(listener.stop)
 

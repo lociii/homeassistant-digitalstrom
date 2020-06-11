@@ -22,5 +22,15 @@
     "abort": {
       "not_digitalstrom_server": "Das entdeckte Gerät ist kein digitalSTROM-Server"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Optionen der digitalSTROM Installation",
+        "data": {
+          "generic_scenes": "Sichtbare generische Szenen"
+        }
+      }
+    }
   }
 }
