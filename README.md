@@ -1,3 +1,9 @@
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
+# DEPRECATED
+
+This integration is deprecated as I'm no longer using the digitalSTROM home control system. Feel free to contact me if you'd like to take over.
+
 # digitalSTROM component for Home Assistant
 
 ## What is this about?
